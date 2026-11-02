@@ -1,0 +1,36 @@
+name: vechain_flutter_sdk
+description: "A native Flutter/Dart SDK for VeChainThor. Pure Dart: wallets, transactions, fee delegation and VeBetter X-to-Earn integration."
+version: 0.0.1-dev
+homepage: https://github.com/nemorixgroup/vechain-flutter-sdk
+repository: https://github.com/nemorixgroup/vechain-flutter-sdk
+issue_tracker: https://github.com/nemorixgroup/vechain-flutter-sdk/issues
+
+topics:
+  - vechain
+  - vet
+  - blockchain
+  - web3
+  - flutter
+
+platforms:
+  android:
+  ios:
+  macos:
+  windows:
+  linux:
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: ^1.15.0
+  pointycastle: ^4.0.0    # secp256k1, keccak256, blake2b
+
+dev_dependencies:
+  coverage: ^1.7.2
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^10.3.0
