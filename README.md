@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.1-dev
+  vechain_flutter_sdk: ^0.0.2-dev
 ```
 
 ```bash
@@ -59,15 +59,40 @@ flutter pub get
 
 ## Quick Start
 
-Examples will be added with each release, starting with `0.0.1-dev`.
+## Quick Start
+
+```dart
+import 'package:vechain_flutter_sdk/vechain_flutter_sdk.dart';
+
+// The official networks are predefined const values, so they can be
+// used as default parameters. The chain tag is derived from the
+// genesis block ID (its last byte), so the two can never disagree.
+const network = VeChainNetwork.testnet;
+print(network.chainTag); // 39 (0x27)
+print(network.nodeUrl); // https://testnet.vechain.org
+```
+
+```dart
+// A custom network points to your own node. Inputs are validated and
+// normalized (lowercase genesis ID, no trailing slash); invalid values
+// throw VeChainNetworkException instead of producing a broken network.
+final myNode = VeChainNetwork.custom(
+  name: 'my-mainnet-node',
+  genesisId:
+      '0x00000000851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a',
+  nodeUrl: 'https://my-node.example.com/',
+);
+print(myNode.chainTag); // 74 (0x4a)
+print(myNode.nodeUrl); // https://my-node.example.com
+```
 
 ## Networks
 
-| Network | Chain Tag | Explorer |
-|---------|-----------|----------|
-| Mainnet | `0x4a` | [explore.vechain.org](https://explore.vechain.org) |
-| Testnet | `0x27` | [explore-testnet.vechain.org](https://explore-testnet.vechain.org) |
-| Solo | `0xf6` | Local node |
+| Network | Chain Tag | Node URL | Explorer |
+|---------|-----------|----------|----------|
+| Mainnet | `0x4a` | `https://mainnet.vechain.org` | [explore.vechain.org](https://explore.vechain.org) |
+| Testnet | `0x27` | `https://testnet.vechain.org` | [explore-testnet.vechain.org](https://explore-testnet.vechain.org) |
+| Solo | `0xf6` | `http://127.0.0.1:8669` | Local node |
 
 ## Contributing
 

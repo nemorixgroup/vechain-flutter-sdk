@@ -24,8 +24,12 @@
 //   Phase 6 - VeBetter Integration (B3TR, VOT3, X2Earn rewards)
 //   Phase 7 - Certificates (VIP-192) and demo app
 
+import 'phase1/network_example.dart';
+
 Future<void> main() async {
   // Phase 1 - Foundations
-  // https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/docs-sdk/phase1
-  print('vechain_flutter_sdk examples start with 0.1.0-dev.');
+  // https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/docs-sdk/phase-1
+
+  print('--- 0.0.2-dev: Network configuration ---');
+  networkConfigurationExample();
 }

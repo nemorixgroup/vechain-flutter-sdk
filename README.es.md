@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.1-dev
+  vechain_flutter_sdk: ^0.0.2-dev
 ```
 
 ```bash
@@ -61,15 +61,39 @@ flutter pub get
 
 ## Inicio rápido
 
-Los ejemplos se agregarán con cada release, empezando por `0.0.1-dev`.
+```dart
+import 'package:vechain_flutter_sdk/vechain_flutter_sdk.dart';
+
+// Las redes oficiales son valores const predefinidos, así que pueden
+// usarse como parámetros por defecto. El chain tag se deriva del ID del
+// bloque génesis (su último byte), así que nunca pueden contradecirse.
+const network = VeChainNetwork.testnet;
+print(network.chainTag); // 39 (0x27)
+print(network.nodeUrl); // https://testnet.vechain.org
+```
+
+```dart
+// Una red personalizada apunta a tu propio nodo. Las entradas se
+// validan y normalizan (genesis ID en minúsculas, sin barra final); los
+// valores inválidos lanzan VeChainNetworkException en lugar de producir
+// una red rota.
+final myNode = VeChainNetwork.custom(
+  name: 'my-mainnet-node',
+  genesisId:
+      '0x00000000851caf3cfdb6e899cf5958bfb1ac3413d346d43539627e6be7ec1b4a',
+  nodeUrl: 'https://my-node.example.com/',
+);
+print(myNode.chainTag); // 74 (0x4a)
+print(myNode.nodeUrl); // https://my-node.example.com
+```
 
 ## Redes
 
-| Red | Chain Tag | Explorer |
-|-----|-----------|----------|
-| Mainnet | `0x4a` | [explore.vechain.org](https://explore.vechain.org) |
-| Testnet | `0x27` | [explore-testnet.vechain.org](https://explore-testnet.vechain.org) |
-| Solo | `0xf6` | Nodo local |
+| Red | Chain Tag | URL del nodo | Explorer |
+|-----|-----------|--------------|----------|
+| Mainnet | `0x4a` | `https://mainnet.vechain.org` | [explore.vechain.org](https://explore.vechain.org) |
+| Testnet | `0x27` | `https://testnet.vechain.org` | [explore-testnet.vechain.org](https://explore-testnet.vechain.org) |
+| Solo | `0xf6` | `http://127.0.0.1:8669` | Nodo local |
 
 ## Contribuciones
 

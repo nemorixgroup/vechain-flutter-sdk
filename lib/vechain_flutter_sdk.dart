@@ -4,3 +4,6 @@
 library;
 
 // ---- Phase 1: Foundations ----
+
+export 'src/exceptions/vechain_network_exception.dart';
+export 'src/network/vechain_network.dart';
