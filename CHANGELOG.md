@@ -5,11 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Versioning by phase: phase N uses `0.N.x`. Intermediate releases carry
-the `-dev` suffix; the last release of each phase is published without
-it, marking the phase as complete.
+Versioning by phase: each phase is built in small `-dev` sub-versions
+and closes with a consolidation release. Phase 1 runs from `0.0.1-dev`
+and closes at `0.1.0-dev`; Phase 2 starts at `0.1.1-dev` and closes at
+`0.2.0-dev`, and so on.
 
-## Unreleased
+## 0.0.2-dev
+
+Phase 1 in progress: network configuration, the identity every
+transaction depends on.
+
+### Added
+
+- `VeChainNetwork`: an immutable network definition with `name`,
+  `genesisId`, `nodeUrl`, a derived `chainTag`, and a `nodeUri` getter
+- Official networks as `const` values, usable as default parameters:
+  `VeChainNetwork.mainnet` (chain tag `0x4a`),
+  `VeChainNetwork.testnet` (`0x27`) and `VeChainNetwork.solo` (`0xf6`)
+- `VeChainNetwork.custom` for private or local nodes, with validation:
+  non-empty name, a genesis ID of `0x` plus 64 hex characters, and an
+  absolute `http`/`https` node URL with a host
+- Input normalization in `VeChainNetwork.custom`: surrounding
+  whitespace is trimmed, the genesis ID is lowercased, and trailing
+  slashes are removed from the node URL
+- Value equality (`==` and `hashCode`) and a readable `toString` that
+  shows the chain tag in hex
+- `VeChainNetworkException`, thrown for any invalid network definition
+- 27 unit tests covering the official constants, custom networks,
+  normalization, equality, and every validation error
+- Example: `example/phase1/network_example.dart`
+
+### Design Decisions
+
+- The chain tag is derived from the last byte of the genesis ID
+  instead of being stored, so a network with an inconsistent chain tag
+  cannot be built
+- `nodeUrl` is a `String` rather than a `Uri`, because `Uri` cannot be
+  `const`; official networks need to be `const` to work as default
+  parameter values
+- The solo node uses `http://127.0.0.1:8669` instead of `localhost`,
+  following the official SDK, which does so to avoid IPv6 resolution
+  issues
+- The EVM chain ID (`0x186a9` on mainnet, `0x186aa` on testnet) is
+  intentionally left out: native VeChain transactions use the chain
+  tag, and the EVM chain ID will be added with the contracts phase
+
+## 0.0.1-dev
 
 ### Added
 
