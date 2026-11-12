@@ -1,6 +1,6 @@
 name: vechain_flutter_sdk
 description: "A native Flutter/Dart SDK for VeChainThor. Pure Dart: wallets, transactions, fee delegation and VeBetter X-to-Earn integration."
-version: 0.0.2-dev
+version: 0.0.3-dev
 homepage: https://github.com/nemorixgroup/vechain-flutter-sdk
 repository: https://github.com/nemorixgroup/vechain-flutter-sdk
 issue_tracker: https://github.com/nemorixgroup/vechain-flutter-sdk/issues

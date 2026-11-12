@@ -24,6 +24,7 @@
 //   Phase 6 - VeBetter Integration (B3TR, VOT3, X2Earn rewards)
 //   Phase 7 - Certificates (VIP-192) and demo app
 
+import 'phase1/hash_example.dart';
 import 'phase1/network_example.dart';
 
 Future<void> main() async {
@@ -32,4 +33,8 @@ Future<void> main() async {
 
   print('--- 0.0.2-dev: Network configuration ---');
   networkConfigurationExample();
+
+  print('');
+  print('--- 0.0.3-dev: Hashing and hex encoding ---');
+  hashingExample();
 }
