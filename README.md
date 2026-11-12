@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.2-dev
+  vechain_flutter_sdk: ^0.0.3-dev
 ```
 
 ```bash
@@ -62,6 +62,9 @@ flutter pub get
 ## Quick Start
 
 ```dart
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:vechain_flutter_sdk/vechain_flutter_sdk.dart';
 
 // The official networks are predefined const values, so they can be
@@ -84,6 +87,28 @@ final myNode = VeChainNetwork.custom(
 );
 print(myNode.chainTag); // 74 (0x4a)
 print(myNode.nodeUrl); // https://my-node.example.com
+```
+
+```dart
+// VeChainThor uses two 32-byte hashes: BLAKE2b-256 for transaction
+// signing hashes and IDs, and Keccak-256 (legacy Keccak, as in
+// Ethereum, not SHA3-256) for addresses and ABI encoding.
+final data = Uint8List.fromList(utf8.encode('VeChainThor'));
+final blake = VeChainHash.blake2b256(data); // Uint8List, 32 bytes
+final keccak = VeChainHash.keccak256(data); // Uint8List, 32 bytes
+
+// Hashing several parts equals hashing them joined, the same way the
+// node builds a transaction ID from its signing hash and sender.
+final txIdLike = VeChainHash.blake2b256Concat([blake, keccak]);
+```
+
+```dart
+// VeChainHex converts bytes to the 0x-prefixed strings used by the
+// VeChainThor APIs. Decoding is strict: a missing digit is rejected,
+// never padded, because a padded value would be different bytes.
+print(VeChainHex.encode(blake)); // 0x... (64 lowercase hex digits)
+final bytes = VeChainHex.decode('0xCAFE'); // [202, 254]
+VeChainHex.decode('0xabc'); // throws VeChainCodecException
 ```
 
 ## Networks

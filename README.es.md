@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.2-dev
+  vechain_flutter_sdk: ^0.0.3-dev
 ```
 
 ```bash
@@ -62,6 +62,9 @@ flutter pub get
 ## Inicio rápido
 
 ```dart
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:vechain_flutter_sdk/vechain_flutter_sdk.dart';
 
 // Las redes oficiales son valores const predefinidos, así que pueden
@@ -85,6 +88,30 @@ final myNode = VeChainNetwork.custom(
 );
 print(myNode.chainTag); // 74 (0x4a)
 print(myNode.nodeUrl); // https://my-node.example.com
+```
+
+```dart
+// VeChainThor usa dos hashes de 32 bytes: BLAKE2b-256 para el hash de
+// firma y el ID de las transacciones, y Keccak-256 (Keccak legacy, como
+// en Ethereum, no SHA3-256) para direcciones y codificación ABI.
+final data = Uint8List.fromList(utf8.encode('VeChainThor'));
+final blake = VeChainHash.blake2b256(data); // Uint8List, 32 bytes
+final keccak = VeChainHash.keccak256(data); // Uint8List, 32 bytes
+
+// Hashear varias partes es igual a hashearlas unidas, tal como el nodo
+// construye el ID de una transacción a partir de su hash de firma y el
+// sender.
+final txIdLike = VeChainHash.blake2b256Concat([blake, keccak]);
+```
+
+```dart
+// VeChainHex convierte bytes a los strings con prefijo 0x que usan las
+// APIs de VeChainThor. La decodificación es estricta: un dígito faltante
+// se rechaza, nunca se rellena, porque el valor rellenado serían bytes
+// distintos.
+print(VeChainHex.encode(blake)); // 0x... (64 dígitos hex en minúsculas)
+final bytes = VeChainHex.decode('0xCAFE'); // [202, 254]
+VeChainHex.decode('0xabc'); // lanza VeChainCodecException
 ```
 
 ## Redes
