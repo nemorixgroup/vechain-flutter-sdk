@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.3-dev
+  vechain_flutter_sdk: ^0.0.4-dev
 ```
 
 ```bash
@@ -112,6 +112,35 @@ final txIdLike = VeChainHash.blake2b256Concat([blake, keccak]);
 print(VeChainHex.encode(blake)); // 0x... (64 dígitos hex en minúsculas)
 final bytes = VeChainHex.decode('0xCAFE'); // [202, 254]
 VeChainHex.decode('0xabc'); // lanza VeChainCodecException
+```
+
+```dart
+// Un key pair contiene una llave privada secp256k1, su llave pública en
+// ambos formatos y la dirección de la cuenta. Al imprimirlo solo se
+// muestra la dirección, así que un key pair en un log nunca expone su
+// llave privada.
+final keyPair = VeChainKeyPair.generate();
+print(keyPair.address); // 0x... (checksum EIP-55)
+print(keyPair.publicKey.length); // 65 (sin comprimir)
+print(keyPair.compressedPublicKey.length); // 33
+
+// Restaurar desde la llave privada siempre da la misma cuenta.
+final restored = VeChainKeyPair.fromPrivateKey(keyPair.privateKey);
+print(restored.address == keyPair.address); // true
+```
+
+```dart
+// Las direcciones se validan de forma estricta. Las formas todo en
+// minúsculas o todo en mayúsculas no llevan checksum y se aceptan; una
+// dirección con mayúsculas y minúsculas mezcladas debe coincidir con su
+// checksum EIP-55, así se detecta un carácter mal copiado. Las
+// direcciones cortas se rechazan, nunca se rellenan con ceros.
+final address = VeChainAddress.parse(
+  '0x769e8aa372c8309c834ea6749b88861ff73581ff',
+);
+print(address); // 0x769E8AA372c8309c834EA6749B88861FF73581FF
+VeChainAddress.parse('0x769F8AA372c8309c834EA6749B88861FF73581FF');
+// lanza VeChainAddressException (checksum no coincide)
 ```
 
 ## Redes
