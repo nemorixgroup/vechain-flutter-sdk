@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.3-dev
+  vechain_flutter_sdk: ^0.0.4-dev
 ```
 
 ```bash
@@ -109,6 +109,33 @@ final txIdLike = VeChainHash.blake2b256Concat([blake, keccak]);
 print(VeChainHex.encode(blake)); // 0x... (64 lowercase hex digits)
 final bytes = VeChainHex.decode('0xCAFE'); // [202, 254]
 VeChainHex.decode('0xabc'); // throws VeChainCodecException
+```
+
+```dart
+// A key pair holds a secp256k1 private key, its public key in both
+// formats, and the account address. Printing it shows only the
+// address, so a key pair in a log never leaks its private key.
+final keyPair = VeChainKeyPair.generate();
+print(keyPair.address); // 0x... (EIP-55 checksum)
+print(keyPair.publicKey.length); // 65 (uncompressed)
+print(keyPair.compressedPublicKey.length); // 33
+
+// Restoring from the private key always gives the same account.
+final restored = VeChainKeyPair.fromPrivateKey(keyPair.privateKey);
+print(restored.address == keyPair.address); // true
+```
+
+```dart
+// Addresses are parsed strictly. All-lowercase and all-uppercase forms
+// carry no checksum and are accepted; a mixed-case address must match
+// its EIP-55 checksum, so one mistyped character is caught. Short
+// addresses are rejected, never padded with zeros.
+final address = VeChainAddress.parse(
+  '0x769e8aa372c8309c834ea6749b88861ff73581ff',
+);
+print(address); // 0x769E8AA372c8309c834EA6749B88861FF73581FF
+VeChainAddress.parse('0x769F8AA372c8309c834EA6749B88861FF73581FF');
+// throws VeChainAddressException (checksum mismatch)
 ```
 
 ## Networks
