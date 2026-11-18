@@ -25,6 +25,7 @@
 //   Phase 7 - Certificates (VIP-192) and demo app
 
 import 'phase1/hash_example.dart';
+import 'phase1/keypair_example.dart';
 import 'phase1/network_example.dart';
 
 Future<void> main() async {
@@ -37,4 +38,8 @@ Future<void> main() async {
   print('');
   print('--- 0.0.3-dev: Hashing and hex encoding ---');
   hashingExample();
+
+  print('');
+  print('--- 0.0.4-dev: Keypair, address and checksum ---');
+  keypairAndAddressExample();
 }
