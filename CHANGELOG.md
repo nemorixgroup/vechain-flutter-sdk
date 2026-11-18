@@ -10,6 +10,54 @@ and closes with a consolidation release. Phase 1 runs from `0.0.1-dev`
 and closes at `0.1.0-dev`; Phase 2 starts at `0.1.1-dev` and closes at
 `0.2.0-dev`, and so on.
 
+## 0.0.4-dev
+
+Phase 1 in progress: secp256k1 key pairs, address derivation, and the
+EIP-55 address checksum.
+
+### Added
+
+- `VeChainKeyPair.generate`, using `Random.secure()` and discarding any
+  value outside the valid range [1, n - 1]
+- `VeChainKeyPair.fromPrivateKey`, validating the key length and range
+- `VeChainKeyPair` getters for the private key, the 65-byte uncompressed
+  public key, the 33-byte compressed public key, and the address
+- `VeChainAddress.fromPublicKey` (compressed or uncompressed key),
+  `VeChainAddress.parse`, and `VeChainAddress.fromBytes`
+- `VeChainAddress.toString` with the EIP-55 mixed-case checksum, and
+  value equality by bytes
+- `VeChainCryptoException` for invalid keys and curve points, and
+  `VeChainAddressException` for invalid addresses
+- 67 unit tests, including the official key and address vectors from
+  the VeChain SDK for JavaScript and the EIP-55 specification vectors
+- Example: `example/phase1/keypair_example.dart`
+
+### Design Decisions
+
+- `VeChainAddress.parse` enforces EIP-55: a mixed-case address must
+  match its checksum; the official SDK accepts any mixed case without
+  checking it
+- Short addresses are rejected instead of being padded with zeros, as
+  the official `Address.of` does, because padding produces a different
+  valid-looking address
+- Public keys are decoded and validated explicitly: only `0x02`/`0x03`
+  (33 bytes) or `0x04` (65 bytes), with the curve equation checked and
+  compressed points decompressed by the SDK itself, because
+  pointycastle's `decodePoint` skips the on-curve check for
+  uncompressed points
+- Key pair getters return copies and `toString` shows only the address;
+  private key bytes cannot be reliably wiped from memory in Dart, so the
+  SDK limits exposure instead of promising to erase them
+- secp256k1 operations live in an internal `VeChainSecp256k1` class
+  shared by keys and addresses; it is not exported
+
+### Status
+
+Phase 1 in progress: key pairs, address derivation and the EIP-55
+checksum complete and verified against the official VeChain vectors.  
+Not ready for production use.  
+Next: Signatures and public key recovery (`0.0.5-dev`).
+
 ## 0.0.3-dev
 
 Phase 1 in progress: the two hash functions VeChainThor uses, and a
