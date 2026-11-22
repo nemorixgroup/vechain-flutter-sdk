@@ -10,6 +10,50 @@ and closes with a consolidation release. Phase 1 runs from `0.0.1-dev`
 and closes at `0.1.0-dev`; Phase 2 starts at `0.1.1-dev` and closes at
 `0.2.0-dev`, and so on.
 
+## 0.0.5-dev
+
+Phase 1 in progress: secp256k1 signatures and public key recovery.
+
+### Added
+
+- `VeChainKeyPair.sign`, which signs a 32-byte hash and returns a
+  `VeChainSignature`
+- `VeChainSignature`: a validated 65-byte signature (r + s + recovery)
+  with `fromBytes`, `bytes`, `r`, `s`, `recovery`, value equality and a
+  hex `toString`
+- `VeChainSignature.recoverPublicKey` and
+  `VeChainSignature.recoverAddress`, which identify the signer of a hash
+- `sign` and `recoverPublicKey` in the internal `VeChainSecp256k1`
+  class, with the recovery byte and public key recovery implemented by
+  the SDK (SEC 1, section 4.1.6)
+- 26 unit tests, including the official signature vector from the
+  VeChain SDK for JavaScript and an independent vector with recovery
+  byte 1
+- Example: `example/phase1/signature_example.dart`
+
+### Design Decisions
+
+- Signatures use RFC 6979 (a deterministic nonce derived with
+  HMAC-SHA256), so the same hash and key always give the same
+  signature, matching the official SDK byte for byte
+- Signatures are always normalized to a low S, because the VeChainThor
+  transaction pool rejects high-S signatures (including the gas payer
+  signature under VIP-191) to prevent signature malleability
+- `VeChainSignature.fromBytes` rejects a high S, where the official
+  SDK accepts it; such a signature would be rejected by the network
+  anyway, so the SDK reports it early with a clear message
+- The recovery byte is 0 or 1, as in the official SDK, not 27 or 28 as
+  in Ethereum transactions
+- Only 32-byte hashes can be signed or recovered; the SDK never signs a
+  raw message
+
+### Status
+
+Phase 1 in progress: signatures and public key recovery complete and
+verified against the official VeChain signature vector.   
+Not ready for production use.   
+Next: Mnemonic (BIP-39) (`0.0.6-dev`). 
+
 ## 0.0.4-dev
 
 Phase 1 in progress: secp256k1 key pairs, address derivation, and the

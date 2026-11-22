@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.4-dev
+  vechain_flutter_sdk: ^0.0.5-dev
 ```
 
 ```bash
@@ -141,6 +141,20 @@ final address = VeChainAddress.parse(
 print(address); // 0x769E8AA372c8309c834EA6749B88861FF73581FF
 VeChainAddress.parse('0x769F8AA372c8309c834EA6749B88861FF73581FF');
 // lanza VeChainAddressException (checksum no coincide)
+```
+
+```dart
+// La firma se aplica sobre un hash de 32 bytes. Las firmas son
+// deterministas (RFC 6979) y siempre tienen una S baja, porque el
+// txpool de VeChainThor rechaza las firmas con S alta. El nodo recupera
+// al firmante desde la propia firma, así que ninguna llave pública
+// viaja con ella.
+final hash = VeChainHash.keccak256(
+  Uint8List.fromList(utf8.encode('hello world')),
+);
+final signature = keyPair.sign(hash); // VeChainSignature, 65 bytes
+print(signature.recovery); // 0 o 1 (no 27/28 como en Ethereum)
+print(signature.recoverAddress(hash) == keyPair.address); // true
 ```
 
 ## Redes
