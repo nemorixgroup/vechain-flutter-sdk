@@ -27,6 +27,7 @@
 import 'phase1/hash_example.dart';
 import 'phase1/keypair_example.dart';
 import 'phase1/network_example.dart';
+import 'phase1/signature_example.dart';
 
 Future<void> main() async {
   // Phase 1 - Foundations
@@ -42,4 +43,8 @@ Future<void> main() async {
   print('');
   print('--- 0.0.4-dev: Keypair, address and checksum ---');
   keypairAndAddressExample();
+
+  print('');
+  print('--- 0.0.5-dev: Signatures and public key recovery ---');
+  signatureExample();
 }
