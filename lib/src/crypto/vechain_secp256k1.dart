@@ -1,27 +1,37 @@
 import 'dart:typed_data';
 
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/digests/sha256.dart';
 import 'package:pointycastle/ecc/api.dart';
 import 'package:pointycastle/ecc/curves/secp256k1.dart';
+import 'package:pointycastle/macs/hmac.dart';
+import 'package:pointycastle/signers/ecdsa_signer.dart';
 import 'package:vechain_flutter_sdk/src/exceptions/vechain_crypto_exception.dart';
 
-/// Internal secp256k1 operations shared by keys and addresses.
+/// Internal secp256k1 operations shared by keys, addresses and
+/// signatures.
 ///
 /// Why this exists: VeChainThor accounts use the secp256k1 elliptic
-/// curve, the same as Ethereum. Both key pairs and address derivation
-/// need to validate private keys, derive public keys, and turn a
-/// compressed public key back into its full form. Keeping those
-/// operations here gives them one strict implementation.
+/// curve, the same as Ethereum. Key pairs, address derivation and
+/// signatures all need to validate private keys, derive public keys,
+/// decompress points, sign hashes and recover the signer's public key.
+/// Keeping those operations here gives them one strict implementation.
 ///
-/// Design decision: public keys are decoded and validated explicitly
-/// instead of with pointycastle's `decodePoint`, which does not check
-/// that an uncompressed point is on the curve, accepts encodings VeChain
-/// never uses (`0x00`, `0x06`, `0x07`), and signals an invalid
-/// compressed point by throwing an `Error`. This class only accepts
-/// `0x02`/`0x03` (33 bytes) or `0x04` (65 bytes), checks the curve
-/// equation, and decompresses points itself.
+/// Design decisions:
+///
+/// - Public keys are decoded and validated explicitly instead of with
+///   pointycastle's `decodePoint`, which does not check that an
+///   uncompressed point is on the curve, accepts encodings VeChain never
+///   uses (`0x00`, `0x06`, `0x07`), and signals an invalid compressed
+///   point by throwing an `Error`.
+/// - Signatures use RFC 6979 (a deterministic nonce derived with
+///   HMAC-SHA256) and are always normalized to a low S, because the
+///   VeChainThor transaction pool rejects signatures with a high S.
+/// - pointycastle does not compute the recovery byte or recover public
+///   keys, so both are implemented here (SEC 1, section 4.1.6).
 ///
 /// This class is internal to the SDK and not exported. Use
-/// `VeChainKeyPair` and `VeChainAddress` instead.
+/// `VeChainKeyPair`, `VeChainAddress` and `VeChainSignature` instead.
 ///
 /// Example:
 /// ```dart
@@ -42,6 +52,12 @@ class VeChainSecp256k1 {
   /// Length of an uncompressed public key (`0x04` + X + Y), in bytes.
   static const int uncompressedPublicKeyLength = 65;
 
+  /// Length of a message hash that can be signed, in bytes.
+  static const int hashLength = 32;
+
+  /// Length of a signature (r + s + recovery), in bytes.
+  static const int signatureLength = 65;
+
   /// Length of one curve coordinate (X or Y), in bytes.
   static const int _coordinateLength = 32;
 
@@ -61,6 +77,10 @@ class VeChainSecp256k1 {
   /// is an integer in the range [1, n - 1].
   static BigInt get order => _domain.n;
 
+  /// Half the curve order, n / 2: the largest S a low-S signature can
+  /// have.
+  static BigInt get halfOrder => order >> 1;
+
   /// Whether [privateKey] is 32 bytes and in the range [1, n - 1].
   static bool isValidPrivateKey(Uint8List privateKey) {
     if (privateKey.length != privateKeyLength) return false;
@@ -77,12 +97,7 @@ class VeChainSecp256k1 {
     bool compressed = false,
   }) {
     // Never derive anything from an out-of-range key.
-    if (!isValidPrivateKey(privateKey)) {
-      throw const VeChainCryptoException(
-        'Invalid private key: expected 32 bytes representing an integer '
-        'between 1 and the secp256k1 curve order minus 1.',
-      );
-    }
+    if (!isValidPrivateKey(privateKey)) throw _invalidPrivateKey();
 
     // The public key is the generator point multiplied by the key.
     final point = (_domain.G * bytesToBigInt(privateKey))!;
@@ -140,6 +155,90 @@ class VeChainSecp256k1 {
     ]);
   }
 
+  /// Signs a 32-byte [hash] with [privateKey], returning 65 bytes:
+  /// r (32) + s (32) + recovery (1, either 0 or 1).
+  ///
+  /// The signature is deterministic (RFC 6979) and always has a low S.
+  ///
+  /// Throws a [VeChainCryptoException] if [hash] is not 32 bytes or
+  /// [privateKey] is invalid.
+  static Uint8List sign(Uint8List hash, Uint8List privateKey) {
+    _requireHash(hash);
+    if (!isValidPrivateKey(privateKey)) throw _invalidPrivateKey();
+
+    // RFC 6979: the nonce k is derived from the key and the hash with
+    // HMAC-SHA256; the null digest means the hash is signed as given.
+    final signer = ECDSASigner(null, HMac(SHA256Digest(), 64))
+      ..init(
+        true,
+        PrivateKeyParameter<ECPrivateKey>(
+          ECPrivateKey(bytesToBigInt(privateKey), _domain),
+        ),
+      );
+    final raw = signer.generateSignature(hash) as ECSignature;
+
+    // The transaction pool rejects a high S, so always use n - s then.
+    final signature = raw.normalize(_domain);
+
+    // The recovery byte is whichever of 0 or 1 gives back our own key.
+    final publicKey = derivePublicKey(privateKey);
+    for (var recovery = 0; recovery < 2; recovery++) {
+      final candidate = _recover(hash, signature.r, signature.s, recovery);
+      if (candidate != null && _bytesEqual(candidate, publicKey)) {
+        return Uint8List.fromList([
+          ...bigIntToBytes(signature.r, _coordinateLength),
+          ...bigIntToBytes(signature.s, _coordinateLength),
+          recovery,
+        ]);
+      }
+    }
+
+    // Recovery ids 2 and 3 need r >= n, with odds of about 2^-128.
+    throw const VeChainCryptoException(
+      'Signing failed: no recovery byte of 0 or 1 matches the signer.',
+    );
+  }
+
+  /// Recovers the 65-byte uncompressed public key that produced
+  /// [signature] (r + s + recovery) over the 32-byte [hash].
+  ///
+  /// Throws a [VeChainCryptoException] if [hash] is not 32 bytes, if the
+  /// signature is malformed, or if no public key can be recovered.
+  static Uint8List recoverPublicKey(Uint8List hash, Uint8List signature) {
+    _requireHash(hash);
+
+    // Check the layout: 65 bytes, r and s in range, recovery 0 or 1.
+    if (signature.length != signatureLength) {
+      throw VeChainCryptoException(
+        'Invalid signature: expected $signatureLength bytes, got '
+        '${signature.length}.',
+      );
+    }
+    final r = bytesToBigInt(signature.sublist(0, 32));
+    final s = bytesToBigInt(signature.sublist(32, 64));
+    final recovery = signature[64];
+    if (!_isInOrderRange(r) || !_isInOrderRange(s)) {
+      throw const VeChainCryptoException(
+        'Invalid signature: r and s must be between 1 and the secp256k1 '
+        'curve order minus 1.',
+      );
+    }
+    if (recovery != 0 && recovery != 1) {
+      throw VeChainCryptoException(
+        'Invalid signature: the recovery byte must be 0 or 1, got '
+        '$recovery.',
+      );
+    }
+
+    final publicKey = _recover(hash, r, s, recovery);
+    if (publicKey == null) {
+      throw const VeChainCryptoException(
+        'Invalid signature: no public key can be recovered from it.',
+      );
+    }
+    return publicKey;
+  }
+
   /// Converts big-endian [bytes] to a non-negative [BigInt].
   static BigInt bytesToBigInt(Uint8List bytes) {
     var result = BigInt.zero;
@@ -162,6 +261,52 @@ class VeChainSecp256k1 {
     return result;
   }
 
+  /// Recovers the uncompressed public key for (r, s, recovery) over
+  /// [hash], or returns null if there is none (SEC 1, section 4.1.6).
+  static Uint8List? _recover(
+    Uint8List hash,
+    BigInt r,
+    BigInt s,
+    int recovery,
+  ) {
+    // R is the point with X = r; the recovery byte is the parity of Y.
+    Uint8List rUncompressed;
+    try {
+      rUncompressed = decodePublicKey(
+        Uint8List.fromList([
+          if (recovery == 1) 0x03 else 0x02,
+          ...bigIntToBytes(r, _coordinateLength),
+        ]),
+      );
+    } on VeChainCryptoException {
+      return null;
+    }
+    final rPoint = _domain.curve.decodePoint(rUncompressed)!;
+
+    // Q = r^-1 (s R - e G), computed as u1 G + u2 R.
+    final e = bytesToBigInt(hash) % order;
+    final rInverse = r.modInverse(order);
+    final u1 = ((order - e) * rInverse) % order;
+    final u2 = (s * rInverse) % order;
+    final q = (_domain.G * u1)! + (rPoint * u2);
+
+    if (q == null || q.isInfinity) return null;
+    return q.getEncoded(false);
+  }
+
+  /// Throws unless [hash] is exactly 32 bytes.
+  static void _requireHash(Uint8List hash) {
+    if (hash.length != hashLength) {
+      throw VeChainCryptoException(
+        'Invalid hash: expected $hashLength bytes, got ${hash.length}.',
+      );
+    }
+  }
+
+  /// Whether [value] is in the range [1, n - 1].
+  static bool _isInOrderRange(BigInt value) =>
+      value > BigInt.zero && value < order;
+
   /// Whether (x, y) satisfies the secp256k1 equation y^2 = x^3 + 7.
   static bool _isOnCurve(BigInt x, BigInt y) {
     if (x >= _fieldPrime || y >= _fieldPrime) return false;
@@ -170,6 +315,22 @@ class VeChainSecp256k1 {
         (x.modPow(BigInt.from(3), _fieldPrime) + _curveB) % _fieldPrime;
     return left == right;
   }
+
+  /// Whether [a] and [b] contain the same bytes.
+  static bool _bytesEqual(Uint8List a, Uint8List b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// The exception for a private key that is out of range.
+  static VeChainCryptoException _invalidPrivateKey() =>
+      const VeChainCryptoException(
+        'Invalid private key: expected 32 bytes representing an integer '
+        'between 1 and the secp256k1 curve order minus 1.',
+      );
 
   /// The exception for a public key that is not a valid curve point.
   static VeChainCryptoException _notOnCurve() => const VeChainCryptoException(
