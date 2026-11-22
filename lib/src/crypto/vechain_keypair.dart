@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:vechain_flutter_sdk/src/address/vechain_address.dart';
 import 'package:vechain_flutter_sdk/src/crypto/vechain_secp256k1.dart';
+import 'package:vechain_flutter_sdk/src/crypto/vechain_signature.dart';
 import 'package:vechain_flutter_sdk/src/exceptions/vechain_crypto_exception.dart';
 
 /// A secp256k1 key pair for a VeChainThor account: a private key, its
@@ -12,7 +13,8 @@ import 'package:vechain_flutter_sdk/src/exceptions/vechain_crypto_exception.dart
 /// secp256k1 private key. From it come the public key (used to verify
 /// signatures) and the address (where the account receives funds).
 /// This class bundles the three, validated once at creation, so the rest
-/// of the SDK never handles an unchecked key.
+/// of the SDK never handles an unchecked key. It also signs hashes, so
+/// the private key never has to leave it.
 ///
 /// Design decisions:
 ///
@@ -114,6 +116,23 @@ class VeChainKeyPair {
 
   /// The 33-byte compressed public key, `0x02` or `0x03` + X (a copy).
   Uint8List get compressedPublicKey => Uint8List.fromList(_compressedPublicKey);
+
+  /// Signs a 32-byte [hash] with this key pair's private key.
+  ///
+  /// The signature is deterministic (RFC 6979): the same hash always
+  /// gives the same signature. It always has a low S, as the VeChainThor
+  /// transaction pool requires.
+  ///
+  /// Throws a [VeChainCryptoException] if [hash] is not 32 bytes.
+  ///
+  /// Example:
+  /// ```dart
+  /// final hash = VeChainHash.keccak256(message);
+  /// final signature = keyPair.sign(hash);
+  /// print(signature.recoverAddress(hash) == keyPair.address); // true
+  /// ```
+  VeChainSignature sign(Uint8List hash) =>
+      VeChainSignature.fromBytes(VeChainSecp256k1.sign(hash, _privateKey));
 
   /// Shows only the address; the private key is never printed.
   @override
