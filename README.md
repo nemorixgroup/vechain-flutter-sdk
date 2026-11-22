@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.4-dev
+  vechain_flutter_sdk: ^0.0.5-dev
 ```
 
 ```bash
@@ -136,6 +136,19 @@ final address = VeChainAddress.parse(
 print(address); // 0x769E8AA372c8309c834EA6749B88861FF73581FF
 VeChainAddress.parse('0x769F8AA372c8309c834EA6749B88861FF73581FF');
 // throws VeChainAddressException (checksum mismatch)
+```
+
+```dart
+// Signing works on a 32-byte hash. Signatures are deterministic
+// (RFC 6979) and always have a low S, because the VeChainThor
+// transaction pool rejects high-S signatures. The node recovers the
+// signer from the signature itself, so no public key travels with it.
+final hash = VeChainHash.keccak256(
+  Uint8List.fromList(utf8.encode('hello world')),
+);
+final signature = keyPair.sign(hash); // VeChainSignature, 65 bytes
+print(signature.recovery); // 0 or 1 (not 27/28 as in Ethereum)
+print(signature.recoverAddress(hash) == keyPair.address); // true
 ```
 
 ## Networks
