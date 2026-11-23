@@ -13,5 +13,7 @@ export 'src/crypto/vechain_signature.dart';
 export 'src/exceptions/vechain_address_exception.dart';
 export 'src/exceptions/vechain_codec_exception.dart';
 export 'src/exceptions/vechain_crypto_exception.dart';
+export 'src/exceptions/vechain_mnemonic_exception.dart';
 export 'src/exceptions/vechain_network_exception.dart';
+export 'src/mnemonic/vechain_mnemonic.dart';
 export 'src/network/vechain_network.dart';
