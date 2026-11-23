@@ -26,6 +26,7 @@
 
 import 'phase1/hash_example.dart';
 import 'phase1/keypair_example.dart';
+import 'phase1/mnemonic_example.dart';
 import 'phase1/network_example.dart';
 import 'phase1/signature_example.dart';
 
@@ -47,4 +48,8 @@ Future<void> main() async {
   print('');
   print('--- 0.0.5-dev: Signatures and public key recovery ---');
   signatureExample();
+
+  print('');
+  print('--- 0.0.6-dev: Mnemonic (BIP-39) ---');
+  mnemonicExample();
 }

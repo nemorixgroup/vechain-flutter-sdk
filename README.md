@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.5-dev
+  vechain_flutter_sdk: ^0.0.6-dev
 ```
 
 ```bash
@@ -149,6 +149,20 @@ final hash = VeChainHash.keccak256(
 final signature = keyPair.sign(hash); // VeChainSignature, 65 bytes
 print(signature.recovery); // 0 or 1 (not 27/28 as in Ethereum)
 print(signature.recoverAddress(hash) == keyPair.address); // true
+```
+
+```dart
+// A mnemonic is the human-readable backup of a wallet: 12 to 24
+// English words (BIP-39) with a built-in checksum. Parsing normalizes
+// case and spacing; a mistyped or swapped word is rejected, and errors
+// report only the position of a bad word, never the word itself.
+final mnemonic = VeChainMnemonic.generate(); // 12 words by default
+final restored = VeChainMnemonic.parse(mnemonic.phrase);
+
+// The 64-byte seed feeds the HD wallet. The default empty passphrase
+// matches the official VeChain SDK.
+final seed = restored.toSeed(); // Uint8List, 64 bytes
+print(mnemonic); // VeChainMnemonic(12 words), never the words
 ```
 
 ## Networks
