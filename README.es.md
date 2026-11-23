@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.5-dev
+  vechain_flutter_sdk: ^0.0.6-dev
 ```
 
 ```bash
@@ -155,6 +155,21 @@ final hash = VeChainHash.keccak256(
 final signature = keyPair.sign(hash); // VeChainSignature, 65 bytes
 print(signature.recovery); // 0 o 1 (no 27/28 como en Ethereum)
 print(signature.recoverAddress(hash) == keyPair.address); // true
+```
+
+```dart
+// Un mnemónico es el respaldo legible de una wallet: de 12 a 24 palabras
+// en inglés (BIP-39) con un checksum incorporado. Al parsearlo se
+// normalizan mayúsculas y espacios; una palabra mal escrita o cambiada
+// de lugar se rechaza, y los errores indican solo la posición de la
+// palabra incorrecta, nunca la palabra.
+final mnemonic = VeChainMnemonic.generate(); // 12 palabras por defecto
+final restored = VeChainMnemonic.parse(mnemonic.phrase);
+
+// La seed de 64 bytes alimenta el HD wallet. La passphrase vacía por
+// defecto coincide con el SDK oficial de VeChain.
+final seed = restored.toSeed(); // Uint8List, 64 bytes
+print(mnemonic); // VeChainMnemonic(12 words), nunca las palabras
 ```
 
 ## Redes
