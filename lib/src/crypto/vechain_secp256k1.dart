@@ -14,8 +14,9 @@ import 'package:vechain_flutter_sdk/src/exceptions/vechain_crypto_exception.dart
 /// Why this exists: VeChainThor accounts use the secp256k1 elliptic
 /// curve, the same as Ethereum. Key pairs, address derivation and
 /// signatures all need to validate private keys, derive public keys,
-/// decompress points, sign hashes and recover the signer's public key.
-/// Keeping those operations here gives them one strict implementation.
+/// compress and decompress points, sign hashes and recover the signer's
+/// public key. Keeping those operations here gives them one strict
+/// implementation.
 ///
 /// Design decisions:
 ///
@@ -74,14 +75,14 @@ class VeChainSecp256k1 {
   static final BigInt _curveB = BigInt.from(7);
 
   /// The order n of the secp256k1 generator point. A valid private key
-  /// is an integer in the range [1, n - 1].
+  /// is an integer in the range `[1, n - 1]`.
   static BigInt get order => _domain.n;
 
   /// Half the curve order, n / 2: the largest S a low-S signature can
   /// have.
   static BigInt get halfOrder => order >> 1;
 
-  /// Whether [privateKey] is 32 bytes and in the range [1, n - 1].
+  /// Whether [privateKey] is 32 bytes and in the range `[1, n - 1]`.
   static bool isValidPrivateKey(Uint8List privateKey) {
     if (privateKey.length != privateKeyLength) return false;
     final value = bytesToBigInt(privateKey);
@@ -152,6 +153,22 @@ class VeChainSecp256k1 {
       0x04,
       ...bigIntToBytes(x, _coordinateLength),
       ...bigIntToBytes(y, _coordinateLength),
+    ]);
+  }
+
+  /// Validates [publicKey] (compressed or uncompressed) and returns it
+  /// in compressed form (33 bytes): `0x02` or `0x03` + X.
+  ///
+  /// Throws a [VeChainCryptoException] if [publicKey] is not a valid
+  /// secp256k1 public key.
+  static Uint8List compressPublicKey(Uint8List publicKey) {
+    // Validate first; this also inflates a compressed input.
+    final uncompressed = decodePublicKey(publicKey);
+
+    // The prefix encodes the parity of Y: 0x02 if even, 0x03 if odd.
+    return Uint8List.fromList([
+      if (uncompressed.last.isOdd) 0x03 else 0x02,
+      ...uncompressed.sublist(1, 1 + _coordinateLength),
     ]);
   }
 
@@ -303,7 +320,7 @@ class VeChainSecp256k1 {
     }
   }
 
-  /// Whether [value] is in the range [1, n - 1].
+  /// Whether [value] is in the range `[1, n - 1]`.
   static bool _isInOrderRange(BigInt value) =>
       value > BigInt.zero && value < order;
 
