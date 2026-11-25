@@ -48,7 +48,7 @@ class VeChainSignature {
   /// (1).
   ///
   /// Throws a [VeChainCryptoException] if the length is not 65, if r or
-  /// s is outside [1, n - 1], if s is greater than n / 2, or if the
+  /// s is outside `[1, n - 1]`, if s is greater than n / 2, or if the
   /// recovery byte is not 0 or 1.
   ///
   /// Example:

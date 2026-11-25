@@ -25,6 +25,7 @@
 //   Phase 7 - Certificates (VIP-192) and demo app
 
 import 'phase1/hash_example.dart';
+import 'phase1/hdkey_example.dart';
 import 'phase1/keypair_example.dart';
 import 'phase1/mnemonic_example.dart';
 import 'phase1/network_example.dart';
@@ -52,4 +53,8 @@ Future<void> main() async {
   print('');
   print('--- 0.0.6-dev: Mnemonic (BIP-39) ---');
   mnemonicExample();
+
+  print('');
+  print('--- 0.0.7-dev: HD wallet (BIP-32) ---');
+  hdWalletExample();
 }

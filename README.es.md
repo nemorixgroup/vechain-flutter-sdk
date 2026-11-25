@@ -52,7 +52,7 @@ especificaciones oficiales) está documentada en
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.6-dev
+  vechain_flutter_sdk: ^0.0.7-dev
 ```
 
 ```bash
@@ -170,6 +170,23 @@ final restored = VeChainMnemonic.parse(mnemonic.phrase);
 // defecto coincide con el SDK oficial de VeChain.
 final seed = restored.toSeed(); // Uint8List, 64 bytes
 print(mnemonic); // VeChainMnemonic(12 words), nunca las palabras
+```
+
+```dart
+// Un HD wallet deriva todas las cuentas a partir de un solo mnemónico.
+// Las cuentas de VeChainThor viven en m/44'/818'/0'/0/i (818 es el coin
+// type registrado de VeChain), y fromMnemonic devuelve ese nodo por
+// defecto.
+final root = VeChainHDKey.fromMnemonic(mnemonic);
+final account0 = root.deriveChild(0); // primera cuenta
+print(account0.address); // 0x... (checksum EIP-55)
+final signer = account0.keyPair; // VeChainKeyPair, listo para firmar
+
+// Una copia watch-only (llave pública + chain code) deriva las mismas
+// direcciones sin ninguna llave privada; por ejemplo, en un servidor
+// que solo necesita recibir fondos.
+final watcher = VeChainHDKey.fromPublicKey(root.publicKey, root.chainCode);
+print(watcher.deriveChild(0).address == account0.address); // true
 ```
 
 ## Redes

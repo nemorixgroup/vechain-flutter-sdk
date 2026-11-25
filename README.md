@@ -50,7 +50,7 @@ in [docs-sdk/](https://github.com/nemorixgroup/VeChain-Knowledge-Base/tree/main/
 ```yaml
 # pubspec.yaml
 dependencies:
-  vechain_flutter_sdk: ^0.0.6-dev
+  vechain_flutter_sdk: ^0.0.7-dev
 ```
 
 ```bash
@@ -163,6 +163,22 @@ final restored = VeChainMnemonic.parse(mnemonic.phrase);
 // matches the official VeChain SDK.
 final seed = restored.toSeed(); // Uint8List, 64 bytes
 print(mnemonic); // VeChainMnemonic(12 words), never the words
+```
+
+```dart
+// An HD wallet derives every account from one mnemonic. VeChainThor
+// accounts live under m/44'/818'/0'/0/i (818 is VeChain's registered
+// coin type), and fromMnemonic returns that node by default.
+final root = VeChainHDKey.fromMnemonic(mnemonic);
+final account0 = root.deriveChild(0); // first account
+print(account0.address); // 0x... (EIP-55 checksum)
+final signer = account0.keyPair; // VeChainKeyPair, ready to sign
+
+// A watch-only copy (public key + chain code) derives the same
+// addresses without any private key, e.g. on a server that only
+// needs to receive funds.
+final watcher = VeChainHDKey.fromPublicKey(root.publicKey, root.chainCode);
+print(watcher.deriveChild(0).address == account0.address); // true
 ```
 
 ## Networks

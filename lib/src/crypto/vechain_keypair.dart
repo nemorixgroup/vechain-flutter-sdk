@@ -20,7 +20,7 @@ import 'package:vechain_flutter_sdk/src/exceptions/vechain_crypto_exception.dart
 ///
 /// - Keys are generated with `Random.secure()` from `dart:math`, which
 ///   works the same on every platform, and any value outside the valid
-///   range [1, n - 1] is discarded and drawn again.
+///   range `[1, n - 1]` is discarded and drawn again.
 /// - Getters return copies, so callers cannot modify the stored keys.
 /// - [toString] shows only the address, never the private key, so a key
 ///   pair printed in a log does not leak its secret.
@@ -49,7 +49,7 @@ class VeChainKeyPair {
   /// Creates a key pair from an existing 32-byte [privateKey].
   ///
   /// Throws a [VeChainCryptoException] if [privateKey] is not 32 bytes or
-  /// is outside the range [1, n - 1], where n is the secp256k1 order.
+  /// is outside the range `[1, n - 1]`, where n is the secp256k1 order.
   ///
   /// Example:
   /// ```dart
@@ -70,7 +70,7 @@ class VeChainKeyPair {
     return VeChainKeyPair._(
       privateKey: key,
       publicKey: publicKey,
-      compressedPublicKey: _compress(publicKey),
+      compressedPublicKey: VeChainSecp256k1.compressPublicKey(publicKey),
       address: VeChainAddress.fromPublicKey(publicKey),
     );
   }
@@ -137,14 +137,4 @@ class VeChainKeyPair {
   /// Shows only the address; the private key is never printed.
   @override
   String toString() => 'VeChainKeyPair(address: $address)';
-
-  /// Compresses a 65-byte uncompressed public key to 33 bytes.
-  static Uint8List _compress(Uint8List publicKey) {
-    // The prefix encodes the parity of Y: 0x02 if even, 0x03 if odd.
-    final isYOdd = publicKey.last.isOdd;
-    return Uint8List.fromList([
-      if (isYOdd) 0x03 else 0x02,
-      ...publicKey.sublist(1, 33),
-    ]);
-  }
 }

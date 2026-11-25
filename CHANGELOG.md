@@ -10,6 +10,68 @@ and closes with a consolidation release. Phase 1 runs from `0.0.1-dev`
 and closes at `0.1.0-dev`; Phase 2 starts at `0.1.1-dev` and closes at
 `0.2.0-dev`, and so on.
 
+## 0.0.7-dev
+
+Phase 1 in progress: BIP-32 hierarchical deterministic (HD) wallets.
+
+### Added
+
+- `VeChainHDKey.fromMnemonic`, which derives the official VeChain
+  account node `m/44'/818'/0'/0` by default, with an optional path and
+  passphrase
+- `VeChainHDKey.fromSeed`, `fromPrivateKey` and `fromPublicKey`
+  (watch-only), as in the official SDK
+- `VeChainHDKey.derive` for any valid BIP-32 path, and `deriveChild`
+  for normal and hardened children
+- `VeChainHDKey` getters for the private key (null when watch-only),
+  the compressed public key, the chain code, `depth`, `index`,
+  `isWatchOnly`, `address` and `keyPair`
+- `VeChainHDKey.vetDerivationPath` and `VeChainHDKey.hardenedOffset`
+- `VeChainHDKeyException` for malformed paths, wrong seed or chain code
+  lengths, out-of-range indexes, and private key operations on
+  watch-only keys
+- `compressPublicKey` in the internal `VeChainSecp256k1` class
+- 30 unit tests, including the official BIP-32 test vectors 1 and 2
+  and the official VeChain addresses and private keys derived from the
+  official test mnemonic
+- Example: `example/phase1/hdkey_example.dart`
+
+### Changed
+
+- `VeChainKeyPair` compresses its public key with the shared
+  `VeChainSecp256k1.compressPublicKey` instead of a private copy of the
+  same logic
+
+### Fixed
+
+- Three dartdoc warnings ("unresolved doc reference") caused by the
+  range `[1, n - 1]` being read as a doc link; the range is now written
+  as code
+
+### Design Decisions
+
+- `derive` accepts any syntactically valid BIP-32 path; the official
+  `isDerivationPathValid` allows fewer shapes than the official
+  `derive` actually accepts
+- `fromMnemonic` takes a validated `VeChainMnemonic` instead of raw
+  words
+- An index that produces an invalid key (odds of about 1 in 2^127)
+  throws instead of silently moving to the next index, which would
+  return a different account than the one requested
+- Extended keys (`xprv`/`xpub` in Base58) are out of scope for now; the
+  tests use the official BIP-32 vectors converted to raw chain codes and
+  keys, with their checksums verified
+- Getters return copies, and `toString` never shows the private key or
+  the chain code, since a public key plus its chain code reveals every
+  normal child's public key
+
+### Status
+
+Phase 1 in progress: HD wallets complete and verified against the
+official BIP-32 vectors and the official VeChain account addresses.  
+Not ready for production use.  
+Next: Keystore (`0.0.8-dev`).
+
 ## 0.0.6-dev
 
 Phase 1 in progress: BIP-39 mnemonics and seed derivation.
